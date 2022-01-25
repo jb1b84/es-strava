@@ -30,9 +30,20 @@ def signup():
     # handle get for webhook callback / token handoff
     verify_token = 'JSON281'
 
+    # check for access code
+    code = request.args.get('code')
+    if (code):
+        # this is a new auth attempt
+        scope = request.args.get('scope')
+        logging.warning('code: {}, scope: {}'.format(code, scope))
+        # need to exchange the auth code and scope for a refresh token
+        # doing this manually in postman for now though so just bounce out
+        return "thanks for the code"
+
     mode = request.args.get('hub.mode')
     token = request.args.get('hub.verify_token')
     challenge = request.args.get('hub.challenge')
+    logging.warning('mode: {}, token: {}'.format(mode, token))
 
     if (mode and token):
         if (mode == 'subscribe' and token == verify_token):
