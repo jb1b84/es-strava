@@ -1,5 +1,6 @@
 from crypt import methods
 from distutils.log import debug
+import logging
 import os
 
 from flask import Flask, request
@@ -15,6 +16,7 @@ Strava API: new user signup flow & event hook
 @app.route("/info")
 def hello_world():
     # placeholder for app info & verification
+    logging.debug("info route hit")
     name = os.environ.get("NAME", "World")
     return "Hello {}!".format(name)
 
@@ -30,7 +32,7 @@ def signup():
 
     if (mode and token):
         if (mode == 'subscribe' and token == verify_token):
-            print('webhook verified')
+            logging.info('webhook verified')
             return {"hub.challenge": challenge}
         else:
             return "unknown mode or token", 403
@@ -40,10 +42,11 @@ def signup():
 
 @app.route('/', methods=['POST'])
 def new_event():
+    logging.debug("POST request received")
     # handle post for event received
-    print("Data: ", request.data)
-    print("Form: ", request.form)
-    print("JSON: ", request.json)
+    logging.debug("Data: ", request.data)
+    logging.debug("Form: ", request.form)
+    logging.debug("JSON: ", request.json)
 
     return "message received"
 
