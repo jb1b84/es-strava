@@ -19,7 +19,7 @@ Strava API: new user signup flow & event hook
 def hello_world():
     setup_logging()
     # placeholder for app info & verification
-    logging.debug("info route hit")
+    logging.warning("info route hit")
     name = os.environ.get("NAME", "World")
     return "Hello {}!".format(name)
 
@@ -49,11 +49,11 @@ def signup():
 @app.route('/', methods=['POST'])
 def new_event():
     setup_logging()
-    logging.debug("POST request received")
+    logging.warning("POST request received")
     # handle post for event received
-    logging.debug("Data: ", request.data)
-    logging.debug("Form: ", request.form)
-    logging.debug("JSON: ", request.json)
+    logging.warning("Data: ", request.data)
+    logging.warning("Form: ", request.form)
+    logging.warning("JSON: ", request.json)
 
     return "message received"
 
