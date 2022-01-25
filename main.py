@@ -12,14 +12,14 @@ Strava API: new user signup flow & event hook
 """
 
 
-@app.route("/")
+@app.route("/info")
 def hello_world():
     # placeholder for app info & verification
     name = os.environ.get("NAME", "World")
     return "Hello {}!".format(name)
 
 
-@app.route('/webhook', methods=['GET'])
+@app.route('/', methods=['GET'])
 def signup():
     # handle get for webhook callback / token handoff
     verify_token = 'notatoken'
@@ -38,7 +38,7 @@ def signup():
         return "unsupported method", 403
 
 
-@app.route('/webhook', methods=['POST'])
+@app.route('/', methods=['POST'])
 def new_event():
     # handle post for event received
     print("Data: ", request.data)
