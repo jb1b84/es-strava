@@ -7,23 +7,35 @@ from flask import Flask, request
 app = Flask(__name__)
 
 
-@app.route("/")
-def hello_world():
-    print('test flow')
-    name = os.environ.get("NAME", "World")
-    return "Hello {}!".format(name)
-
-
 """
 Strava API: new user signup flow & event hook
 """
 
 
+@app.route("/")
+def hello_world():
+    # placeholder for app info & verification
+    name = os.environ.get("NAME", "World")
+    return "Hello {}!".format(name)
+
+
 @app.route('/webhook', methods=['GET'])
 def signup():
     # handle get for webhook callback / token handoff
+    verify_token = 'notatoken'
 
-    return "thanks for signing up"
+    mode = request.args.get('hub.mode')
+    token = request.args.get('hub.verify_token')
+    challenge = request.args.get('hub.challenge')
+
+    if (mode and token):
+        if (mode == 'subscribe' and token == verify_token):
+            print('webhook verified')
+            return {"hub.challenge": challenge}
+        else:
+            return "unknown mode or token", 403
+    else:
+        return "unsupported method", 403
 
 
 @app.route('/webhook', methods=['POST'])
