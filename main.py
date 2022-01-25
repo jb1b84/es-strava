@@ -63,9 +63,8 @@ def new_event():
     setup_logging()
     logging.warning("POST request received")
     # handle post for event received
-    logging.warning("Data: ", json.dumps(request.data))
-    logging.warning("Form: ", json.dumps(request.form))
-    logging.warning("JSON: ", json.dumps(request.json))
+    print("Data: {}".format(json.dumps(request.data)))
+    print("JSON: {}".format(json.dumps(request.json)))
 
     return "message received"
 
