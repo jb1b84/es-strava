@@ -2,6 +2,7 @@ from cmath import log
 from crypt import methods
 from distutils.log import debug
 import google.cloud.logging
+import json
 import logging
 import os
 
@@ -62,9 +63,9 @@ def new_event():
     setup_logging()
     logging.warning("POST request received")
     # handle post for event received
-    logging.warning("Data: ", request.data)
-    logging.warning("Form: ", request.form)
-    logging.warning("JSON: ", request.json)
+    logging.warning("Data: ", json.dumps(request.data))
+    logging.warning("Form: ", json.dumps(request.form))
+    logging.warning("JSON: ", json.dumps(request.json))
 
     return "message received"
 
