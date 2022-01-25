@@ -1,5 +1,7 @@
+from cmath import log
 from crypt import methods
 from distutils.log import debug
+import google.cloud.logging
 import logging
 import os
 
@@ -15,6 +17,7 @@ Strava API: new user signup flow & event hook
 
 @app.route("/info")
 def hello_world():
+    setup_logging()
     # placeholder for app info & verification
     logging.debug("info route hit")
     name = os.environ.get("NAME", "World")
@@ -23,8 +26,9 @@ def hello_world():
 
 @app.route('/', methods=['GET'])
 def signup():
+    setup_logging()
     # handle get for webhook callback / token handoff
-    verify_token = 'notatoken'
+    verify_token = 'JSON281'
 
     mode = request.args.get('hub.mode')
     token = request.args.get('hub.verify_token')
@@ -35,13 +39,16 @@ def signup():
             logging.info('webhook verified')
             return {"hub.challenge": challenge}
         else:
+            logging.warning("unknown mode or token used")
             return "unknown mode or token", 403
     else:
+        logging.warning("unsupported method passed to webhook")
         return "unsupported method", 403
 
 
 @app.route('/', methods=['POST'])
 def new_event():
+    setup_logging()
     logging.debug("POST request received")
     # handle post for event received
     logging.debug("Data: ", request.data)
@@ -58,6 +65,18 @@ gcloud pub/sub placeholder
 
 def subscribe():
     return "Subscribe route"
+
+
+"""
+Utils
+"""
+
+
+def setup_logging():
+    # logging client setup
+    # TODO: move to global hook
+    client = google.cloud.logging.Client()
+    client.setup_logging()
 
 
 if __name__ == "__main__":
