@@ -1,3 +1,4 @@
+from asyncore import write
 import google.cloud.logging
 import json
 import logging
@@ -39,7 +40,7 @@ def signup():
         scope = request.args.get('scope')
         logging.warning('code: {}, scope: {}'.format(code, scope))
         # need to exchange the auth code and scope for a refresh token
-        # doing this manually in postman for now though so just bounce out
+        code_exchange(code)
         return "thanks for the code"
 
     mode = request.args.get('hub.mode')
@@ -73,12 +74,13 @@ def new_event():
               event['object_type'], event['owner_id'], event['object_id']))
 
         # retrieve the event from api
+        fetch_object(event['object_id'], event['owner_id'])
     else:
         # nothing to do here
         logging.info('received event with unknown aspect type {}'.format(
             event['aspect_type']))
 
-    return 200
+    return "event received"
 
 
 @app.route('/athlete-profile/<int:athlete_id>')
@@ -95,6 +97,34 @@ def get_athlete_profile(athlete_id):
     print(r.json())
 
     return "test"
+
+
+@app.route('/code-exchange/<code>')
+def code_exchange(code):
+    # api details
+    strava_api = 'https://www.strava.com/api/v3'
+
+    url = '{}/oauth/token'.format(strava_api)
+    r = requests.post(url, data={
+        "client_id": os.environ.get('STRAVA_CLIENT_ID'),
+        "client_secret": os.environ.get('STRAVA_CLIENT_SECRET'),
+        "grant_type": "authorization_code",
+        "code": code
+    })
+
+    res = r.json()
+    print(res)
+
+    if r.status_code == 200:
+        athlete_id = res['athlete']['id']
+        athlete_doc = {
+            "athlete_id": athlete_id,
+            "details": res
+        }
+
+        write_doc('strava-athletes', athlete_id, athlete_doc)
+
+    return "hello"
 
 
 @app.route('/refresh-token/<int:athlete_id>')
@@ -119,9 +149,7 @@ def refresh_athlete_token(athlete_id):
         "details": res
     }
 
-    res = write_doc('strava-athletes', athlete_id, athlete_doc)
-
-    print(r.json())
+    write_doc('strava-athletes', athlete_id, athlete_doc)
 
     return "token updated"
 
@@ -136,7 +164,6 @@ def fetch_object(object_id, athlete_id):
     headers = {"Authorization": "Bearer {}".format(bearer_token)}
 
     url = '{}/activities/{}/'.format(strava_api, object_id)
-    print("hitting strava api at {} with token {}".format(url, bearer_token))
 
     r = requests.get(
         url,
@@ -146,7 +173,9 @@ def fetch_object(object_id, athlete_id):
 
     if r.status_code == 200:
         # pass on to processing
-        logging.info(r.json())
+        print(res)
+        activity_id = res['id']
+        write_doc('strava-activity', activity_id, res)
         return "activity fetched"
     elif r.status_code == 401:
         # token has probably expired
@@ -154,20 +183,16 @@ def fetch_object(object_id, athlete_id):
         print(res)
 
         # let's get a new one
+        refresh_athlete_token(athlete_id)
+
+        # TODO: retry once
         return "Authorization error, fetching new token"
     else:
         # handle errors
         logging.error(r)
+
+        # don't retry since we're unsure what went wrong
         return "we encountered an error {}: {}".format(r.status_code, res['message'])
-
-
-"""
-gcloud pub/sub placeholder
-"""
-
-
-def subscribe():
-    return "Subscribe route"
 
 
 """
@@ -194,6 +219,7 @@ def connect_elasticsearch():
 def get_athlete(athlete_id):
     res = es.get(index="strava-athletes", id=athlete_id)
 
+    # check on the access token while we're here
     expiry = res['_source']['details']['expires_at']
     minutes_left = (expiry - time.time()) / 60
     print('Token expires in {} minutes'.format(
