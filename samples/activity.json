@@ -1,0 +1,144 @@
+{
+    "resource_state": 3,
+    "athlete": {
+        "id": 49404045,
+        "resource_state": 1
+    },
+    "name": "Afternoon Walk",
+    "distance": 38.3,
+    "moving_time": 12,
+    "elapsed_time": 62,
+    "total_elevation_gain": 0,
+    "type": "Walk",
+    "id": 6581363585,
+    "start_date": "2022-01-25T20:44:54Z",
+    "start_date_local": "2022-01-25T14:44:54Z",
+    "timezone": "(GMT-06:00) America/Chicago",
+    "utc_offset": -21600,
+    "location_city": null,
+    "location_state": null,
+    "location_country": null,
+    "achievement_count": 0,
+    "kudos_count": 0,
+    "comment_count": 0,
+    "athlete_count": 1,
+    "photo_count": 0,
+    "map": {
+        "id": "a6581363585",
+        "polyline": "",
+        "resource_state": 3
+    },
+    "trainer": false,
+    "commute": false,
+    "manual": false,
+    "private": false,
+    "visibility": "everyone",
+    "flagged": false,
+    "gear_id": null,
+    "start_latlng": [],
+    "end_latlng": [],
+    "start_latitude": null,
+    "start_longitude": null,
+    "average_speed": 3.195,
+    "max_speed": 6.876,
+    "has_heartrate": false,
+    "heartrate_opt_out": false,
+    "display_hide_heartrate_option": false,
+    "elev_high": 138.4,
+    "elev_low": 138.3,
+    "upload_id": 6998385701,
+    "upload_id_str": "6998385701",
+    "external_id": "E42B3941-7A1B-4687-A959-053C9088AC58-activity.fit",
+    "from_accepted_tag": false,
+    "pr_count": 0,
+    "total_photo_count": 0,
+    "has_kudoed": false,
+    "description": null,
+    "calories": 5.9,
+    "perceived_exertion": null,
+    "prefer_perceived_exertion": null,
+    "segment_efforts": [],
+    "splits_metric": [
+        {
+            "distance": 38.3,
+            "elapsed_time": 62,
+            "elevation_difference": 0,
+            "moving_time": 12,
+            "split": 1,
+            "average_speed": 3.19,
+            "average_grade_adjusted_speed": null,
+            "pace_zone": 0
+        }
+    ],
+    "splits_standard": [
+        {
+            "distance": 38.3,
+            "elapsed_time": 62,
+            "elevation_difference": 0,
+            "moving_time": 12,
+            "split": 1,
+            "average_speed": 3.19,
+            "average_grade_adjusted_speed": null,
+            "pace_zone": 0
+        }
+    ],
+    "laps": [
+        {
+            "id": 21568631755,
+            "resource_state": 2,
+            "name": "Lap 1",
+            "activity": {
+                "id": 6581363585,
+                "resource_state": 1
+            },
+            "athlete": {
+                "id": 49404045,
+                "resource_state": 1
+            },
+            "elapsed_time": 63,
+            "moving_time": 63,
+            "start_date": "2022-01-25T20:44:54Z",
+            "start_date_local": "2022-01-25T14:44:54Z",
+            "distance": 38.34,
+            "start_index": 0,
+            "end_index": 0,
+            "total_elevation_gain": 0,
+            "average_speed": 0.61,
+            "max_speed": 6.876,
+            "device_watts": false,
+            "lap_index": 1,
+            "split": 1
+        }
+    ],
+    "photos": {
+        "primary": null,
+        "count": 0
+    },
+    "stats_visibility": [
+        {
+            "type": "heart_rate",
+            "visibility": "everyone"
+        },
+        {
+            "type": "pace",
+            "visibility": "everyone"
+        },
+        {
+            "type": "power",
+            "visibility": "everyone"
+        },
+        {
+            "type": "speed",
+            "visibility": "everyone"
+        },
+        {
+            "type": "calories",
+            "visibility": "everyone"
+        }
+    ],
+    "hide_from_home": false,
+    "device_name": "Strava iPhone App",
+    "embed_token": "f61156eec33168677f933953dffcb57d34620118",
+    "private_note": null,
+    "available_zones": []
+}

@@ -1,11 +1,12 @@
-from tokenize import Token
 import google.cloud.logging
 import json
 import logging
 import os
 import requests
+import time
 
 from dotenv import load_dotenv
+from elasticsearch import Elasticsearch
 from flask import Flask, request
 
 app = Flask(__name__)
@@ -21,7 +22,6 @@ Strava API: new user signup flow & event hook
 def hello_world():
     setup_logging()
     # placeholder for app info & verification
-
     name = os.environ.get("NAME", "World")
     return "Hello {}!".format(name)
 
@@ -81,43 +81,84 @@ def new_event():
     return 200
 
 
-@app.route('/fetch/<int:object_id>')
-def fetch_object(object_id):
-    # connection data to populate from local storage & refresh later
-    conn = {
-        "token_type": "Bearer",
-        "expires_at": 123,
-        "expires_in": 123,
-        "refresh_token": "re123",
-        "access_token": "acc123",
-        "athlete": {
-            "id": 49404045
-        }
-    }
+@app.route('/athlete-profile/<int:athlete_id>')
+def get_athlete_profile(athlete_id):
+    athlete = get_athlete(athlete_id)
 
     # api details
     strava_api = 'https://www.strava.com/api/v3'
-    bearer_token = os.environ.get('TOKEN')
+    bearer_token = athlete['details']['access_token']
     headers = {"Authorization": "Bearer {}".format(bearer_token)}
 
-    url = '{}/activities/{}'.format(strava_api, object_id)
-    print(url)
+    url = '{}/athlete'.format(strava_api)
+    r = requests.get(url, headers=headers)
+    print(r.json())
+
+    return "test"
+
+
+@app.route('/refresh-token/<int:athlete_id>')
+def refresh_athlete_token(athlete_id):
+    athlete = get_athlete(athlete_id)
+
+    # api details
+    strava_api = 'https://www.strava.com/api/v3'
+
+    url = '{}/oauth/token'.format(strava_api)
+    r = requests.post(url, data={
+        "client_id": os.environ.get('STRAVA_CLIENT_ID'),
+        "client_secret": os.environ.get('STRAVA_CLIENT_SECRET'),
+        "grant_type": "refresh_token",
+        "refresh_token": athlete['details']['refresh_token']
+    })
+
+    res = r.json()
+
+    athlete_doc = {
+        "athlete_id": athlete_id,
+        "details": res
+    }
+
+    res = write_doc('strava-athletes', athlete_id, athlete_doc)
+
+    print(r.json())
+
+    return "token updated"
+
+
+@app.route('/fetch/<int:object_id>/<int:athlete_id>')
+def fetch_object(object_id, athlete_id):
+    athlete = get_athlete(athlete_id)
+
+    # api details
+    strava_api = 'https://www.strava.com/api/v3'
+    bearer_token = athlete['details']['access_token']
+    headers = {"Authorization": "Bearer {}".format(bearer_token)}
+
+    url = '{}/activities/{}/'.format(strava_api, object_id)
+    print("hitting strava api at {} with token {}".format(url, bearer_token))
 
     r = requests.get(
         url,
         headers=headers
-    ).json()
+    )
+    res = r.json()
 
     if r.status_code == 200:
         # pass on to processing
-        logging.info(r)
+        logging.info(r.json())
         return "activity fetched"
+    elif r.status_code == 401:
+        # token has probably expired
+        print('Status code {} {}'.format(r.status_code, res['message']))
+        print(res)
+
+        # let's get a new one
+        return "Authorization error, fetching new token"
     else:
         # handle errors
         logging.error(r)
-
-        # handle token refresh, need to distinguish these two errors somehow
-        return "we encountered an error"
+        return "we encountered an error {}: {}".format(r.status_code, res['message'])
 
 
 """
@@ -128,6 +169,66 @@ gcloud pub/sub placeholder
 def subscribe():
     return "Subscribe route"
 
+
+"""
+Elasticsearch api
+"""
+
+
+def connect_elasticsearch():
+    es = Elasticsearch(
+        cloud_id=os.environ.get('ES_CLOUD_ID'),
+        api_key=os.environ.get('ES_STRAVA_KEY'),
+        use_ssl=True,
+        verify_certs=True
+    )
+
+    # get cluster info
+    resp = es.info()
+    print(resp)
+
+    return es
+
+
+@app.route('/athlete/<int:athlete_id>', methods=['GET'])
+def get_athlete(athlete_id):
+    res = es.get(index="strava-athletes", id=athlete_id)
+
+    expiry = res['_source']['details']['expires_at']
+    minutes_left = (expiry - time.time()) / 60
+    print('Token expires in {} minutes'.format(
+        minutes_left))
+
+    return res['_source']
+
+
+@app.route('/athlete/<int:athlete_id>', methods=['POST'])
+def set_athlete(athlete_id):
+    athlete_data = request.json
+
+    athlete_doc = {
+        "athlete_id": athlete_id,
+        "details": athlete_data
+    }
+
+    res = write_doc('strava-athletes', athlete_id, athlete_doc)
+
+    return res
+
+
+def write_doc(index, id, doc, refresh=True):
+    res = es.index(index=index,
+                   id=id, document=doc)
+    print(res['result'])
+
+    if refresh:
+        es.indices.refresh(index=index)
+
+    return
+
+
+# sloppy global but works for now
+es = connect_elasticsearch()
 
 """
 Utils
