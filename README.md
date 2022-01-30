@@ -12,4 +12,4 @@ TODO:
 - [ ] Abstract out ES & Strava bits into separate libs
 - [ ] Flask routing refactor
 - [ ] Add logging to Flask hook for all routes
-- [ ] Implement delete activity
+- [ ] Implement delete activity and other aspect types
