@@ -1,4 +1,3 @@
-from asyncore import write
 import google.cloud.logging
 import json
 import logging
@@ -74,7 +73,7 @@ def new_event():
               event['object_type'], event['owner_id'], event['object_id']))
 
         # retrieve the event from api
-        fetch_object(event['object_id'], event['owner_id'])
+        sync_object(event['object_id'], event['owner_id'])
     else:
         # nothing to do here
         logging.info('received event with unknown aspect type {}'.format(
@@ -154,8 +153,8 @@ def refresh_athlete_token(athlete_id):
     return "token updated"
 
 
-@app.route('/fetch/<int:object_id>/<int:athlete_id>')
-def fetch_object(object_id, athlete_id):
+@app.route('/sync/<int:object_id>/<int:athlete_id>')
+def sync_object(object_id, athlete_id):
     athlete = get_athlete(athlete_id)
 
     # api details
@@ -176,7 +175,7 @@ def fetch_object(object_id, athlete_id):
         print(res)
         activity_id = res['id']
         write_doc('strava-activity', activity_id, res)
-        return "activity fetched"
+        return "activity synced"
     elif r.status_code == 401:
         # token has probably expired
         print('Status code {} {}'.format(r.status_code, res['message']))
@@ -240,6 +239,13 @@ def set_athlete(athlete_id):
     res = write_doc('strava-athletes', athlete_id, athlete_doc)
 
     return res
+
+
+@app.route('/activity/<int:activity_id>', methods=['GET'])
+def get_activity(activity_id):
+    res = es.get(index="strava-activity", id=activity_id)
+
+    return res['_source']
 
 
 def write_doc(index, id, doc, refresh=True):
