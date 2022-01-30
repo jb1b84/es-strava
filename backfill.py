@@ -7,8 +7,9 @@ from queue import Queue
 """
 1) Build queue
 2) Open CSV
-3) Add activity_id, athelete_id for each row to queue
-4) Pop jobs and hit local api
+3) Add activity_id for each row to queue
+4) Check if activity already exists in ES
+5) If not, fetch details from Strava and sync in ES
 """
 
 q = Queue()

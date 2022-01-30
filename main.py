@@ -1,5 +1,4 @@
 import google.cloud.logging
-import json
 import logging
 import os
 import requests
@@ -69,8 +68,8 @@ def new_event():
 
     if event['aspect_type'] == 'create':
         # this is a new event creation so let's process it
-        print("New {} event received for user {} with obj id {}".format(
-              event['object_type'], event['owner_id'], event['object_id']))
+        logging.info("New {} event received for user {} with obj id {}".format(
+            event['object_type'], event['owner_id'], event['object_id']))
 
         # retrieve the event from api
         sync_object(event['object_id'], event['owner_id'])
@@ -93,9 +92,27 @@ def get_athlete_profile(athlete_id):
 
     url = '{}/athlete'.format(strava_api)
     r = requests.get(url, headers=headers)
-    print(r.json())
+    # res = r.json()
 
     return "test"
+
+
+def post_data_helper(grant_type=None, code=None, refresh_token=None):
+    data = {
+        "client_id": os.environ.get('STRAVA_CLIENT_ID'),
+        "client_secret": os.environ.get('STRAVA_CLIENT_SECRET')
+    }
+
+    if grant_type:
+        data['grant_type'] = grant_type
+
+    if refresh_token:
+        data['refresh_token'] = refresh_token
+
+    if code:
+        data['code'] = code
+
+    return data
 
 
 @app.route('/code-exchange/<code>')
@@ -104,15 +121,10 @@ def code_exchange(code):
     strava_api = 'https://www.strava.com/api/v3'
 
     url = '{}/oauth/token'.format(strava_api)
-    r = requests.post(url, data={
-        "client_id": os.environ.get('STRAVA_CLIENT_ID'),
-        "client_secret": os.environ.get('STRAVA_CLIENT_SECRET'),
-        "grant_type": "authorization_code",
-        "code": code
-    })
+    post_data = post_data_helper(grant_type="authorization_code", code=code)
+    r = requests.post(url, data=post_data)
 
     res = r.json()
-    print(res)
 
     if r.status_code == 200:
         athlete_id = res['athlete']['id']
@@ -123,7 +135,7 @@ def code_exchange(code):
 
         write_doc('strava-athletes', athlete_id, athlete_doc)
 
-    return "hello"
+    return "code exchanged"
 
 
 @app.route('/refresh-token/<int:athlete_id>')
@@ -134,12 +146,9 @@ def refresh_athlete_token(athlete_id):
     strava_api = 'https://www.strava.com/api/v3'
 
     url = '{}/oauth/token'.format(strava_api)
-    r = requests.post(url, data={
-        "client_id": os.environ.get('STRAVA_CLIENT_ID'),
-        "client_secret": os.environ.get('STRAVA_CLIENT_SECRET'),
-        "grant_type": "refresh_token",
-        "refresh_token": athlete['details']['refresh_token']
-    })
+    post_data = post_data_helper(
+        grant_type="refresh_token", refresh_token=athlete['details']['refresh_token'])
+    r = requests.post(url, data=post_data)
 
     res = r.json()
 
@@ -172,15 +181,12 @@ def sync_object(object_id, athlete_id):
 
     if r.status_code == 200:
         # pass on to processing
-        print(res)
         activity_id = res['id']
         write_doc('strava-activity', activity_id, res)
         return "activity synced"
     elif r.status_code == 401:
         # token has probably expired
-        print('Status code {} {}'.format(r.status_code, res['message']))
-        print(res)
-
+        logging.warning("Token has expired, attempting refreh")
         # let's get a new one
         refresh_athlete_token(athlete_id)
 
@@ -209,7 +215,7 @@ def connect_elasticsearch():
 
     # get cluster info
     resp = es.info()
-    print(resp)
+    logging.info(resp)
 
     return es
 
@@ -221,7 +227,7 @@ def get_athlete(athlete_id):
     # check on the access token while we're here
     expiry = res['_source']['details']['expires_at']
     minutes_left = (expiry - time.time()) / 60
-    print('Token expires in {} minutes'.format(
+    logging.info('Token expires in {} minutes'.format(
         minutes_left))
 
     return res['_source']
@@ -251,7 +257,6 @@ def get_activity(activity_id):
 def write_doc(index, id, doc, refresh=True):
     res = es.index(index=index,
                    id=id, document=doc)
-    print(res['result'])
 
     if refresh:
         es.indices.refresh(index=index)
@@ -259,7 +264,6 @@ def write_doc(index, id, doc, refresh=True):
     return
 
 
-# sloppy global but works for now
 es = connect_elasticsearch()
 
 """
